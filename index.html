@@ -186,6 +186,32 @@
             color: #34495e;
         }
 
+        .value-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .edit-icon {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #3498db;
+            transition: color 0.3s ease;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(52, 152, 219, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-icon:hover {
+            color: #2980b9;
+            background: rgba(52, 152, 219, 0.2);
+        }
+
         .card .value.positive {
             color: #27ae60;
         }
@@ -529,7 +555,10 @@
             <div class="summary-cards">
                 <div class="card income">
                     <h4>💰 Faturamento Mensal</h4>
-                    <div class="value" id="monthlyIncome">R$ 0,00</div>
+                    <div class="value-container">
+                        <div class="value" id="monthlyIncome">R$ 0,00</div>
+                        <span class="edit-icon" onclick="showEditIncomeModal()" title="Editar faturamento">✏️</span>
+                    </div>
                 </div>
                 <div class="card expense">
                     <h4>💸 Gastos Mensais</h4>
@@ -637,6 +666,42 @@
                 <div class="modal-footer">
                     <button class="btn btn-success" onclick="saveEditExpense()">Salvar</button>
                     <button class="btn btn-danger" onclick="closeEditModal()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="editIncomeModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Editar Faturamento Mensal</h3>
+                    <span class="close" onclick="closeEditIncomeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editIncomeValue">Valor do Faturamento:</label>
+                        <input type="number" id="editIncomeValue" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="editIncomeMonth">Mês:</label>
+                        <select id="editIncomeMonth">
+                            <option value="janeiro">Janeiro</option>
+                            <option value="fevereiro">Fevereiro</option>
+                            <option value="marco">Março</option>
+                            <option value="abril">Abril</option>
+                            <option value="maio">Maio</option>
+                            <option value="junho">Junho</option>
+                            <option value="julho">Julho</option>
+                            <option value="agosto">Agosto</option>
+                            <option value="setembro">Setembro</option>
+                            <option value="outubro">Outubro</option>
+                            <option value="novembro">Novembro</option>
+                            <option value="dezembro">Dezembro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" onclick="saveEditIncome()">Salvar</button>
+                    <button class="btn btn-danger" onclick="closeEditIncomeModal()">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -1165,6 +1230,32 @@
             }, 5000);
         }
 
+        function showEditIncomeModal() {
+            document.getElementById('editIncomeModal').style.display = 'flex';
+            document.getElementById('editIncomeValue').value = financialData.salary[currentMonth];
+            document.getElementById('editIncomeMonth').value = currentMonth;
+        }
+
+        function closeEditIncomeModal() {
+            document.getElementById('editIncomeModal').style.display = 'none';
+        }
+
+        function saveEditIncome() {
+            const value = parseFloat(document.getElementById('editIncomeValue').value);
+            const month = document.getElementById('editIncomeMonth').value;
+
+            if (isNaN(value) || value < 0) {
+                showAlert('Por favor, insira um valor válido para o faturamento.', 'error');
+                return;
+            }
+
+            financialData.salary[month] = value;
+            saveData();
+            updateDisplay();
+            closeEditIncomeModal();
+            showAlert('Faturamento atualizado com sucesso!', 'success');
+        }
+
         function downloadExampleCSV() {
             // Conteúdo do arquivo Example.csv
             const csvContent = `,,,,,
@@ -1412,16 +1503,12 @@
 
 5 - O foi pago só funciona no site. Na planilha servia anteriormente quando o site não existia`;
 
-            // Criar arquivo ZIP com JSZip
             const zip = new JSZip();
             
-            // Adicionar arquivos ao ZIP
             zip.file("Example.csv", csvContent);
             zip.file("tutorial.txt", tutorialContent);
             
-            // Gerar o arquivo ZIP
             zip.generateAsync({type:"blob"}).then(function(content) {
-                // Criar link de download
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
                 link.download = 'tutorial.zip';
