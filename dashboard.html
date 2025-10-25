@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro</title>
+    <link rel="icon" type="image/x-icon" href="favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .dashboard-content {
+            padding: 30px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid;
+            transition: transform 0.3s ease;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-card.income {
+            border-left-color: #27ae60;
+        }
+
+        .metric-card.expense {
+            border-left-color: #e74c3c;
+        }
+
+        .metric-card.balance {
+            border-left-color: #3498db;
+        }
+
+        .metric-card.savings {
+            border-left-color: #f39c12;
+        }
+
+        .metric-card h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            line-height: 1.1;
+        }
+
+        .metric-value.positive {
+            color: #27ae60;
+        }
+
+        .metric-value.negative {
+            color: #e74c3c;
+        }
+
+        .metric-value.neutral {
+            color: #3498db;
+        }
+
+        .metric-value.warning {
+            color: #f39c12;
+        }
+
+        .metric-change {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            min-height: 400px;
+        }
+
+        .chart-container h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            min-height: 400px;
+            overflow-x: auto;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            min-width: 300px;
+        }
+
+        .insights-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .insights-section h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+
+        .insight-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .insight-item.positive {
+            background: #d4edda;
+            border-left-color: #27ae60;
+            color: #155724;
+        }
+
+        .insight-item.warning {
+            background: #fff3cd;
+            border-left-color: #f39c12;
+            color: #856404;
+        }
+
+        .insight-item.info {
+            background: #d1ecf1;
+            border-left-color: #3498db;
+            color: #0c5460;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-buttons {
+                position: static;
+                justify-content: center;
+                margin-top: 20px;
+            }
+
+            .dashboard-content {
+                padding: 20px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .metric-card {
+                padding: 20px;
+            }
+
+            .metric-value {
+                font-size: 1.8rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .chart-container {
+                min-height: 350px;
+                padding: 20px;
+                overflow-x: auto;
+            }
+
+            .chart-wrapper {
+                height: 250px;
+                min-width: 280px;
+            }
+
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .metric-card {
+                padding: 15px;
+            }
+
+            .metric-value {
+                font-size: 1.6rem;
+            }
+
+            .chart-container {
+                min-height: 300px;
+                padding: 15px;
+                overflow-x: auto;
+            }
+
+            .chart-wrapper {
+                height: 200px;
+                min-width: 250px;
+            }
+
+            .chart-container h3 {
+                font-size: 1.1rem;
+            }
+
+            .insights-section {
+                padding: 15px;
+            }
+
+            .insight-item {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .metric-card {
+                padding: 12px;
+            }
+
+            .metric-value {
+                font-size: 1.4rem;
+            }
+
+            .chart-wrapper {
+                height: 180px;
+                min-width: 220px;
+            }
+
+            .chart-container {
+                min-height: 280px;
+                padding: 10px;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="nav-buttons">
+                <a href="index.html" class="btn">📊 Controle</a>
+                <a href="dashboard.html" class="btn btn-success">📈 Dashboard</a>
+            </div>
+            <h1>📈 Dashboard Financeiro</h1>
+            <p>Análise completa e insights inteligentes sobre suas finanças</p>
+        </div>
+
+        <div class="dashboard-content">
+            <div id="loading" class="loading">
+                <h3>Carregando dados...</h3>
+                <p>Aguarde enquanto processamos suas informações financeiras</p>
+            </div>
+
+            <div id="dashboard" style="display: none;">
+                <div class="metrics-grid">
+                    <div class="metric-card income">
+                        <h4>💰 Receita Total</h4>
+                        <div class="metric-value positive" id="totalIncome">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card expense">
+                        <h4>💸 Gastos Totais</h4>
+                        <div class="metric-value negative" id="totalExpenses">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card balance">
+                        <h4>📊 Saldo Final</h4>
+                        <div class="metric-value neutral" id="totalBalance">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card savings">
+                        <h4>🎯 Taxa de Poupança</h4>
+                        <div class="metric-value warning" id="savingsRate">0%</div>
+                        <div class="metric-change" id="savingsChange">da receita total</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>📈 Evolução Mensal</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>🥧 Distribuição de Gastos</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>⚖️ Receita vs Gastos</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>📊 Gastos por Categoria</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>💰 Saldo Mensal</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>📈 Tendência de Poupança</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="savingsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insights-section">
+                    <h3>💡 Insights Inteligentes</h3>
+                    <div id="insights">
+                        <!-- Insights serão gerados dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let financialData = {};
+        let charts = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFinancialData();
+        });
+
+        function loadFinancialData() {
+            const saved = localStorage.getItem('financialData');
+            if (saved) {
+                financialData = JSON.parse(saved);
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    initializeDashboard();
+                }, 1000);
+            } else {
+                document.getElementById('loading').innerHTML = `
+                    <h3>📊 Nenhum dado encontrado</h3>
+                    <p>Importe dados do CSV no <a href="index.html">Controle Financeiro</a> para visualizar o dashboard</p>
+                `;
+            }
+        }
+
+        function initializeDashboard() {
+            updateMetrics();
+            createCharts();
+            generateInsights();
+        }
+
+        function updateMetrics() {
+            const totalIncome = Object.values(financialData.salary).reduce((sum, salary) => sum + salary, 0);
+            const totalExpenses = Object.values(financialData.expenses).reduce((sum, monthExpenses) => 
+                sum + monthExpenses.reduce((monthSum, expense) => monthSum + expense.value, 0), 0);
+            const totalBalance = totalIncome - totalExpenses;
+            const savingsRate = totalIncome > 0 ? ((totalBalance / totalIncome) * 100) : 0;
+
+            document.getElementById('totalIncome').textContent = formatCurrency(totalIncome);
+            document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('totalBalance').textContent = formatCurrency(totalBalance);
+            document.getElementById('savingsRate').textContent = savingsRate.toFixed(1) + '%';
+
+            document.getElementById('totalBalance').className = totalBalance >= 0 ? 'metric-value positive' : 'metric-value negative';
+        }
+
+        function createCharts() {
+            createMonthlyChart();
+            createExpenseChart();
+            createComparisonChart();
+            createCategoryChart();
+            createBalanceChart();
+            createSavingsChart();
+        }
+
+        function createMonthlyChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const salaries = Object.values(financialData.salary);
+            const expenses = Object.values(financialData.expenses).map(monthExpenses => 
+                monthExpenses.reduce((sum, expense) => sum + expense.value, 0));
+
+            charts.monthly = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Receita',
+                        data: salaries,
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Gastos',
+                        data: expenses,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: window.innerWidth <= 480 ? 10 : 12
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    layout: {
+                        padding: {
+                            right: window.innerWidth <= 768 ? 20 : 0,
+                            left: window.innerWidth <= 768 ? 10 : 0
+                        }
+                    }
+                }
+            });
+        }
+
+        function createExpenseChart() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const expenseCategories = getExpenseCategories();
+            
+            charts.expense = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: expenseCategories.labels,
+                    datasets: [{
+                        data: expenseCategories.values,
+                        backgroundColor: [
+                            '#e74c3c', '#f39c12', '#3498db', '#27ae60', '#9b59b6',
+                            '#1abc9c', '#34495e', '#e67e22', '#2ecc71', '#f1c40f'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    },
+                    cutout: '60%',
+                    layout: {
+                        padding: {
+                            top: window.innerWidth <= 768 ? 20 : 0,
+                            bottom: window.innerWidth <= 768 ? 20 : 0
+                        }
+                    }
+                }
+            });
+        }
+
+        function createComparisonChart() {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const salaries = Object.values(financialData.salary);
+            const expenses = Object.values(financialData.expenses).map(monthExpenses => 
+                monthExpenses.reduce((sum, expense) => sum + expense.value, 0));
+
+            charts.comparison = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Receita',
+                        data: salaries,
+                        backgroundColor: 'rgba(39, 174, 96, 0.8)',
+                        borderColor: '#27ae60',
+                        borderWidth: 1
+                    }, {
+                        label: 'Gastos',
+                        data: expenses,
+                        backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                        borderColor: '#e74c3c',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: window.innerWidth <= 480 ? 10 : 12
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    layout: {
+                        padding: {
+                            right: window.innerWidth <= 768 ? 20 : 0,
+                            left: window.innerWidth <= 768 ? 10 : 0
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const categoryData = getCategoryData();
+            
+            charts.category = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: categoryData.labels,
+                    datasets: [{
+                        label: 'Valor Gasto',
+                        data: categoryData.values,
+                        backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                        borderColor: '#3498db',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                font: {
+                                    size: window.innerWidth <= 480 ? 10 : 12
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            right: window.innerWidth <= 768 ? 20 : 0,
+                            left: window.innerWidth <= 768 ? 10 : 0
+                        }
+                    },
+                    indexAxis: 'y'
+                }
+            });
+        }
+
+        function createBalanceChart() {
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const salaries = Object.values(financialData.salary);
+            const expenses = Object.values(financialData.expenses).map(monthExpenses => 
+                monthExpenses.reduce((sum, expense) => sum + expense.value, 0));
+            const balances = salaries.map((salary, index) => salary - expenses[index]);
+
+            charts.balance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Saldo Mensal',
+                        data: balances,
+                        backgroundColor: balances.map(balance => 
+                            balance >= 0 ? 'rgba(39, 174, 96, 0.8)' : 'rgba(231, 76, 60, 0.8)'
+                        ),
+                        borderColor: balances.map(balance => 
+                            balance >= 0 ? '#27ae60' : '#e74c3c'
+                        ),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: window.innerWidth <= 480 ? 10 : 12
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            right: window.innerWidth <= 768 ? 20 : 0,
+                            left: window.innerWidth <= 768 ? 10 : 0
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSavingsChart() {
+            const ctx = document.getElementById('savingsChart').getContext('2d');
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const salaries = Object.values(financialData.salary);
+            const expenses = Object.values(financialData.expenses).map(monthExpenses => 
+                monthExpenses.reduce((sum, expense) => sum + expense.value, 0));
+            const savingsRates = salaries.map((salary, index) => 
+                salary > 0 ? ((salary - expenses[index]) / salary) * 100 : 0);
+
+            charts.savings = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Taxa de Poupança (%)',
+                        data: savingsRates,
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#f39c12',
+                        pointBorderColor: '#e67e22',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: window.innerWidth <= 480 ? 10 : 12
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    layout: {
+                        padding: {
+                            right: window.innerWidth <= 768 ? 20 : 0,
+                            left: window.innerWidth <= 768 ? 10 : 0
+                        }
+                    }
+                }
+            });
+        }
+
+        function getExpenseCategories() {
+            const categories = {};
+            Object.values(financialData.expenses).forEach(monthExpenses => {
+                monthExpenses.forEach(expense => {
+                    const category = expense.description.toLowerCase();
+                    categories[category] = (categories[category] || 0) + expense.value;
+                });
+            });
+
+            const sortedCategories = Object.entries(categories)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 8);
+
+            return {
+                labels: sortedCategories.map(([label]) => label.charAt(0).toUpperCase() + label.slice(1)),
+                values: sortedCategories.map(([,value]) => value)
+            };
+        }
+
+        function getCategoryData() {
+            const categories = {};
+            Object.values(financialData.expenses).forEach(monthExpenses => {
+                monthExpenses.forEach(expense => {
+                    const category = expense.description.toLowerCase();
+                    categories[category] = (categories[category] || 0) + expense.value;
+                });
+            });
+
+            const sortedCategories = Object.entries(categories)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 6);
+
+            return {
+                labels: sortedCategories.map(([label]) => label.charAt(0).toUpperCase() + label.slice(1)),
+                values: sortedCategories.map(([,value]) => value)
+            };
+        }
+
+        function generateInsights() {
+            const insights = [];
+            const totalIncome = Object.values(financialData.salary).reduce((sum, salary) => sum + salary, 0);
+            const totalExpenses = Object.values(financialData.expenses).reduce((sum, monthExpenses) => 
+                sum + monthExpenses.reduce((monthSum, expense) => monthSum + expense.value, 0), 0);
+            const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+
+            if (savingsRate > 20) {
+                insights.push({
+                    type: 'positive',
+                    text: `🎉 Excelente! Você está poupando ${savingsRate.toFixed(1)}% da sua receita. Continue assim!`
+                });
+            } else if (savingsRate > 10) {
+                insights.push({
+                    type: 'info',
+                    text: `📊 Boa gestão! Você está poupando ${savingsRate.toFixed(1)}% da sua receita.`
+                });
+            } else if (savingsRate > 0) {
+                insights.push({
+                    type: 'warning',
+                    text: `⚠️ Atenção! Você está poupando apenas ${savingsRate.toFixed(1)}% da sua receita. Considere reduzir gastos.`
+                });
+            } else {
+                insights.push({
+                    type: 'warning',
+                    text: `🚨 Cuidado! Você está gastando mais do que recebe. Revise urgentemente seus gastos.`
+                });
+            }
+
+            const avgMonthlyExpense = totalExpenses / 12;
+            const avgMonthlyIncome = totalIncome / 12;
+            
+            if (avgMonthlyExpense > avgMonthlyIncome * 0.8) {
+                insights.push({
+                    type: 'warning',
+                    text: `💸 Seus gastos mensais médios representam ${((avgMonthlyExpense/avgMonthlyIncome)*100).toFixed(1)}% da sua receita.`
+                });
+            }
+
+            const expenseCategories = getExpenseCategories();
+            if (expenseCategories.values.length > 0) {
+                const topCategories = expenseCategories.labels.slice(0, 3);
+                const topValues = expenseCategories.values.slice(0, 3);
+                
+                let topCategoriesText = '';
+                if (topCategories.length === 1) {
+                    topCategoriesText = `Sua maior categoria de gasto é ${topCategories[0]} – ${formatCurrency(topValues[0])}.`;
+                } else if (topCategories.length === 2) {
+                    topCategoriesText = `Suas duas maiores categorias são ${topCategories[0]} – ${formatCurrency(topValues[0])} e ${topCategories[1]} – ${formatCurrency(topValues[1])}.`;
+                } else {
+                    topCategoriesText = `Suas três maiores categorias são: ${topCategories[0]} – ${formatCurrency(topValues[0])}, ${topCategories[1]} – ${formatCurrency(topValues[1])} e ${topCategories[2]} – ${formatCurrency(topValues[2])}.`;
+                }
+                
+                insights.push({
+                    type: 'info',
+                    text: `📈 ${topCategoriesText}`
+                });
+            }
+
+            const monthsWithData = Object.values(financialData.expenses).filter(month => month.length > 0).length;
+            if (monthsWithData < 6) {
+                insights.push({
+                    type: 'info',
+                    text: `📊 Você tem dados de apenas ${monthsWithData} meses. Mais dados gerarão insights mais precisos.`
+                });
+            }
+
+            displayInsights(insights);
+        }
+
+        function displayInsights(insights) {
+            const container = document.getElementById('insights');
+            container.innerHTML = '';
+
+            insights.forEach(insight => {
+                const div = document.createElement('div');
+                div.className = `insight-item ${insight.type}`;
+                div.textContent = insight.text;
+                container.appendChild(div);
+            });
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+    </script>
+</body>
+</html>

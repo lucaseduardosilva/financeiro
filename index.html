@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro</title>
+    <link rel="icon" type="image/x-icon" href="favicon/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group select {
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.income {
+            border-left-color: #27ae60;
+        }
+
+        .card.expense {
+            border-left-color: #e74c3c;
+        }
+
+        .card.balance {
+            border-left-color: #f39c12;
+        }
+
+        .card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .card .value.positive {
+            color: #27ae60;
+        }
+
+        .card .value.negative {
+            color: #e74c3c;
+        }
+
+        .expenses-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .table-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th, .table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            margin: 0 2px;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .value {
+                font-size: 1.5rem;
+            }
+
+            .table {
+                font-size: 14px;
+            }
+
+            .table th,
+            .table td {
+                padding: 10px;
+            }
+
+            .form-section {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            .form-buttons {
+                flex-direction: column;
+            }
+
+            .form-buttons .btn {
+                width: 100%;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .month-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .table {
+                font-size: 12px;
+            }
+
+            .table th,
+            .table td {
+                padding: 8px;
+            }
+        }
+
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .month-selector select {
+            padding: 8px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Controle Financeiro</h1>
+            <p>Gerencie suas finanças de forma inteligente</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <button class="btn" onclick="document.getElementById('csvFile').click()">
+                    📁 Importar CSV
+                </button>
+                <button class="btn btn-success" onclick="showAddExpenseForm()">
+                    ➕ Adicionar Despesa
+                </button>
+                <button class="btn btn-danger" onclick="clearAllData()">
+                    🗑️ Limpar Dados
+                </button>
+                <button class="btn btn-warning" onclick="downloadExampleCSV()">
+                    📄 Exemplo CSV
+                </button>
+                <a href="dashboard.html" class="btn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); text-decoration: none;">
+                    📈 Dashboard
+                </a>
+                <input type="file" id="csvFile" class="file-input" accept=".csv" onchange="importCSV(event)">
+            </div>
+
+            <div class="month-selector">
+                <label for="monthSelect">Mês:</label>
+                <select id="monthSelect" onchange="changeMonth()">
+                    <option value="janeiro">Janeiro</option>
+                    <option value="fevereiro">Fevereiro</option>
+                    <option value="marco">Março</option>
+                    <option value="abril">Abril</option>
+                    <option value="maio">Maio</option>
+                    <option value="junho">Junho</option>
+                    <option value="julho">Julho</option>
+                    <option value="agosto">Agosto</option>
+                    <option value="setembro">Setembro</option>
+                    <option value="outubro">Outubro</option>
+                    <option value="novembro">Novembro</option>
+                    <option value="dezembro">Dezembro</option>
+                </select>
+            </div>
+
+            <div id="alertContainer"></div>
+
+            <div class="summary-cards">
+                <div class="card income">
+                    <h4>💰 Faturamento Mensal</h4>
+                    <div class="value" id="monthlyIncome">R$ 0,00</div>
+                </div>
+                <div class="card expense">
+                    <h4>💸 Gastos Mensais</h4>
+                    <div class="value" id="monthlyExpenses">R$ 0,00</div>
+                </div>
+                <div class="card balance">
+                    <h4>📊 Sobra Mensal</h4>
+                    <div class="value" id="monthlyBalance">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <h4>📈 Faturamento Anual</h4>
+                    <div class="value" id="yearlyIncome">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <h4>📉 Gastos Anuais</h4>
+                    <div class="value" id="yearlyExpenses">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <h4>🎯 Sobra Anual</h4>
+                    <div class="value" id="yearlyBalance">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="form-section" id="addExpenseForm" style="display: none;">
+                <h3>Adicionar Nova Despesa</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expenseDescription">Descrição:</label>
+                        <input type="text" id="expenseDescription" placeholder="Ex: Aluguel">
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseValue">Valor:</label>
+                        <input type="number" id="expenseValue" placeholder="0.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="expensePaid">Status:</label>
+                        <select id="expensePaid">
+                            <option value="false">Não Pago</option>
+                            <option value="true">Pago</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseMonth">Mês:</label>
+                        <select id="expenseMonth">
+                            <option value="janeiro">Janeiro</option>
+                            <option value="fevereiro">Fevereiro</option>
+                            <option value="marco">Março</option>
+                            <option value="abril">Abril</option>
+                            <option value="maio">Maio</option>
+                            <option value="junho">Junho</option>
+                            <option value="julho">Julho</option>
+                            <option value="agosto">Agosto</option>
+                            <option value="setembro">Setembro</option>
+                            <option value="outubro">Outubro</option>
+                            <option value="novembro">Novembro</option>
+                            <option value="dezembro">Dezembro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-buttons">
+                <button class="btn btn-success" onclick="addExpense()">Adicionar Despesa</button>
+                <button class="btn btn-danger" onclick="hideAddExpenseForm()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="expenses-table">
+                <div class="table-header">
+                    Despesas do Mês Selecionado
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Pago</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="editExpenseModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Editar Despesa</h3>
+                    <span class="close" onclick="closeEditModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editDescription">Descrição:</label>
+                        <input type="text" id="editDescription" placeholder="Ex: Aluguel, Internet, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="editValue">Valor:</label>
+                        <input type="number" id="editValue" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPaid">Pago:</label>
+                        <input type="checkbox" id="editPaid" class="checkbox">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" onclick="saveEditExpense()">Salvar</button>
+                    <button class="btn btn-danger" onclick="closeEditModal()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let financialData = {
+            salary: {
+                janeiro: 0,
+                fevereiro: 0,
+                marco: 0,
+                abril: 0,
+                maio: 0,
+                junho: 0,
+                julho: 0,
+                agosto: 0,
+                setembro: 0,
+                outubro: 0,
+                novembro: 0,
+                dezembro: 0
+            },
+            expenses: {
+                janeiro: [],
+                fevereiro: [],
+                marco: [],
+                abril: [],
+                maio: [],
+                junho: [],
+                julho: [],
+                agosto: [],
+                setembro: [],
+                outubro: [],
+                novembro: [],
+                dezembro: []
+            }
+        };
+
+        let currentMonth = 'janeiro';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateDisplay();
+        });
+
+        function saveData() {
+            localStorage.setItem('financialData', JSON.stringify(financialData));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('financialData');
+            if (saved) {
+                financialData = JSON.parse(saved);
+            }
+        }
+
+        function updateDisplay() {
+            updateSummaryCards();
+            updateExpensesTable();
+        }
+
+        function updateSummaryCards() {
+            const currentMonthData = financialData.expenses[currentMonth];
+            const monthlyExpenses = currentMonthData.reduce((sum, expense) => sum + expense.value, 0);
+            const monthlySalary = financialData.salary[currentMonth];
+            const monthlyBalance = monthlySalary - monthlyExpenses;
+
+            let yearlyExpenses = 0;
+            let yearlyIncome = 0;
+            
+            Object.keys(financialData.expenses).forEach(month => {
+                yearlyExpenses += financialData.expenses[month].reduce((sum, expense) => sum + expense.value, 0);
+                yearlyIncome += financialData.salary[month];
+            });
+
+            const yearlyBalance = yearlyIncome - yearlyExpenses;
+
+            document.getElementById('monthlyIncome').textContent = formatCurrency(monthlySalary);
+            document.getElementById('monthlyExpenses').textContent = formatCurrency(monthlyExpenses);
+            document.getElementById('monthlyBalance').textContent = formatCurrency(monthlyBalance);
+            document.getElementById('monthlyBalance').className = `value ${monthlyBalance >= 0 ? 'positive' : 'negative'}`;
+
+            document.getElementById('yearlyIncome').textContent = formatCurrency(yearlyIncome);
+            document.getElementById('yearlyExpenses').textContent = formatCurrency(yearlyExpenses);
+            document.getElementById('yearlyBalance').textContent = formatCurrency(yearlyBalance);
+            document.getElementById('yearlyBalance').className = `value ${yearlyBalance >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        function updateExpensesTable() {
+            const tbody = document.getElementById('expensesTableBody');
+            const currentMonthData = financialData.expenses[currentMonth];
+            
+            tbody.innerHTML = '';
+            
+            if (currentMonthData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">Nenhuma despesa cadastrada para este mês</td></tr>';
+                return;
+            }
+
+            currentMonthData.forEach((expense, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${expense.description}</td>
+                    <td>${formatCurrency(expense.value)}</td>
+                    <td>
+                        <input type="checkbox" class="checkbox" ${expense.paid ? 'checked' : ''} onchange="togglePaymentStatus('${currentMonth}', ${index})">
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-warning btn-small" onclick="editExpense('${currentMonth}', ${index})">Editar</button>
+                        <button class="btn btn-danger btn-small" onclick="removeExpense('${currentMonth}', ${index})">Remover</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function changeMonth() {
+            currentMonth = document.getElementById('monthSelect').value;
+            updateDisplay();
+        }
+
+        function showAddExpenseForm() {
+            document.getElementById('addExpenseForm').style.display = 'block';
+            document.getElementById('expenseMonth').value = currentMonth;
+        }
+
+        function hideAddExpenseForm() {
+            document.getElementById('addExpenseForm').style.display = 'none';
+            document.getElementById('expenseDescription').value = '';
+            document.getElementById('expenseValue').value = '';
+        }
+
+        function addExpense() {
+            const description = document.getElementById('expenseDescription').value.trim();
+            const value = parseFloat(document.getElementById('expenseValue').value);
+            const month = document.getElementById('expenseMonth').value;
+            const paid = document.getElementById('expensePaid').value === 'true';
+
+            if (!description || !value || value <= 0) {
+                showAlert('Por favor, preencha todos os campos corretamente.', 'error');
+                return;
+            }
+
+            financialData.expenses[month].push({
+                description: description,
+                value: value,
+                paid: paid
+            });
+
+            saveData();
+            updateDisplay();
+            hideAddExpenseForm();
+            showAlert('Despesa adicionada com sucesso!', 'success');
+        }
+
+        function removeExpense(month, index) {
+            if (confirm('Tem certeza que deseja remover esta despesa?')) {
+                financialData.expenses[month].splice(index, 1);
+                saveData();
+                updateDisplay();
+                showAlert('Despesa removida com sucesso!', 'success');
+            }
+        }
+
+        let editingExpense = { month: '', index: -1 };
+
+        function editExpense(month, index) {
+            editingExpense.month = month;
+            editingExpense.index = index;
+            
+            const expense = financialData.expenses[month][index];
+            
+            document.getElementById('editDescription').value = expense.description;
+            document.getElementById('editValue').value = expense.value;
+            document.getElementById('editPaid').checked = expense.paid;
+            
+            document.getElementById('editExpenseModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editExpenseModal').style.display = 'none';
+            editingExpense = { month: '', index: -1 };
+        }
+
+        function saveEditExpense() {
+            const description = document.getElementById('editDescription').value.trim();
+            const value = parseFloat(document.getElementById('editValue').value);
+            const paid = document.getElementById('editPaid').checked;
+
+            if (!description || isNaN(value) || value <= 0) {
+                showAlert('Por favor, preencha todos os campos com valores válidos.', 'error');
+                return;
+            }
+
+            financialData.expenses[editingExpense.month][editingExpense.index] = {
+                description: description,
+                value: value,
+                paid: paid
+            };
+
+                saveData();
+                updateDisplay();
+            closeEditModal();
+            showAlert('Despesa editada com sucesso!', 'success');
+        }
+
+        function togglePaymentStatus(month, index) {
+            financialData.expenses[month][index].paid = !financialData.expenses[month][index].paid;
+            saveData();
+        }
+
+        function clearAllData() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                financialData = {
+                    salary: {
+                        janeiro: 0,
+                        fevereiro: 0,
+                        marco: 0,
+                        abril: 0,
+                        maio: 0,
+                        junho: 0,
+                        julho: 0,
+                        agosto: 0,
+                        setembro: 0,
+                        outubro: 0,
+                        novembro: 0,
+                        dezembro: 0
+                    },
+                    expenses: {
+                        janeiro: [],
+                        fevereiro: [],
+                        marco: [],
+                        abril: [],
+                        maio: [],
+                        junho: [],
+                        julho: [],
+                        agosto: [],
+                        setembro: [],
+                        outubro: [],
+                        novembro: [],
+                        dezembro: []
+                    }
+                };
+                localStorage.removeItem('financialData');
+                currentMonth = 'janeiro';
+                document.getElementById('monthSelect').value = 'janeiro';
+                updateDisplay();
+                showAlert('Todos os dados foram limpos!', 'success');
+            }
+        }
+
+        function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    parseCSVSimple(csv);
+                    
+                    let totalExpenses = 0;
+                    Object.keys(financialData.expenses).forEach(month => {
+                        totalExpenses += financialData.expenses[month].length;
+                    });
+                    
+                    showAlert(`CSV importado com sucesso! ${totalExpenses} despesas encontradas.`, 'success');
+                } catch (error) {
+                    console.error('Erro ao importar CSV:', error);
+                    showAlert('Erro ao importar CSV: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            
+            return result.map(item => item.replace(/^"(.*)"$/, '$1'));
+        }
+
+        function parseCSVLineRobust(line) {
+            const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+            const parts = line.split(regex);
+            
+            return parts.map(part => {
+                let cleaned = part.trim();
+                if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+                    cleaned = cleaned.slice(1, -1);
+                }
+                return cleaned;
+            });
+        }
+
+        function parseCSVSimple(csv) {
+            const lines = csv.split('\n');
+            let currentMonth = '';
+            let monthIndex = 0;
+            const months = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 
+                          'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+            financialData.expenses = {
+                janeiro: [], fevereiro: [], marco: [], abril: [], maio: [], junho: [],
+                julho: [], agosto: [], setembro: [], outubro: [], novembro: [], dezembro: []
+            };
+
+            financialData.salary = {
+                janeiro: 0, fevereiro: 0, marco: 0, abril: 0, maio: 0, junho: 0,
+                julho: 0, agosto: 0, setembro: 0, outubro: 0, novembro: 0, dezembro: 0
+            };
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.includes('Planejamento mensal')) {
+                    monthIndex++;
+                    if (monthIndex <= months.length) {
+                        currentMonth = months[monthIndex - 1];
+                    }
+                    continue;
+                }
+
+                if (currentMonth && line.includes('R$') && !line.includes('Sobrou') && !line.includes('Total') && !line.includes('Planejamento') && !line.includes('Lucro')) {
+                    const monthNames = {
+                        'janeiro': 'Janeiro',
+                        'fevereiro': 'Fevereiro', 
+                        'marco': 'Março',
+                        'abril': 'Abril',
+                        'maio': 'Maio',
+                        'junho': 'Junho',
+                        'julho': 'Julho',
+                        'agosto': 'Agosto',
+                        'setembro': 'Setembro',
+                        'outubro': 'Outubro',
+                        'novembro': 'Novembro',
+                        'dezembro': 'Dezembro'
+                    };
+                    
+                    const monthName = monthNames[currentMonth];
+                    const isSalaryLine = monthName && line.includes(monthName);
+                    
+                    
+                    if (isSalaryLine) {
+                        const salaryMatch = line.match(/"R\$ ([\d.,]+)"/);
+                        if (salaryMatch) {
+                            const salaryStr = salaryMatch[1];
+                            const salary = parseFloat(salaryStr.replace(/\./g, '').replace(',', '.'));
+                            if (!isNaN(salary) && salary > 0) {
+                                financialData.salary[currentMonth] = salary;
+                            }
+                        }
+                        
+                        const expenseMatch = line.match(/"R\$ [\d.,]+","R\$ ([\d.,]+)"/);
+                        const expenseDescMatch = line.match(/"R\$ [\d.,]+","R\$ [\d.,]+",([^,]+),/);
+                        
+                        if (expenseMatch && expenseDescMatch) {
+                            const expenseStr = expenseMatch[1];
+                            const expenseDesc = expenseDescMatch[1].trim();
+                            const expense = parseFloat(expenseStr.replace(/\./g, '').replace(',', '.'));
+                            
+                            if (!isNaN(expense) && expense > 0 && expenseDesc) {
+                                financialData.expenses[currentMonth].push({
+                                    description: expenseDesc,
+                                    value: expense,
+                                    paid: false
+                                });
+                            }
+                        }
+                    } else {
+                        const valueMatch = line.match(/"R\$ ([\d.,]+)"/);
+                        const descriptionMatch = line.match(/"R\$ [\d.,]+",([^,]+),/);
+                        
+                        if (valueMatch && descriptionMatch) {
+                            const valueStr = valueMatch[1];
+                            const description = descriptionMatch[1].trim();
+                            
+                            const cleanValue = valueStr.replace(/\./g, '').replace(',', '.');
+                            const value = parseFloat(cleanValue);
+                            
+                            if (!isNaN(value) && value > 0 && description && description !== 'Mês' && description !== 'Valor') {
+                                financialData.expenses[currentMonth].push({
+                                    description: description,
+                                    value: value,
+                                    paid: false
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            saveData();
+            updateDisplay();
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            let currentMonth = '';
+            let monthIndex = 0;
+            const months = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 
+                          'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+            financialData.expenses = {
+                janeiro: [],
+                fevereiro: [],
+                marco: [],
+                abril: [],
+                maio: [],
+                junho: [],
+                julho: [],
+                agosto: [],
+                setembro: [],
+                outubro: [],
+                novembro: [],
+                dezembro: []
+            };
+
+            financialData.salary = {
+                janeiro: 10000,
+                fevereiro: 10000,
+                marco: 10000,
+                abril: 10000,
+                maio: 10000,
+                junho: 10000,
+                julho: 10000,
+                agosto: 10000,
+                setembro: 10000,
+                outubro: 10000,
+                novembro: 10000,
+                dezembro: 10000
+            };
+
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.includes('Planejamento mensal')) {
+                    monthIndex++;
+                    if (monthIndex <= months.length) {
+                        currentMonth = months[monthIndex - 1];
+                    }
+                    continue;
+                }
+
+                if (currentMonth && line.includes(currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)) && line.includes('R$')) {
+                    const parts = parseCSVLineRobust(line);
+                    
+                    if (parts.length >= 3) {
+                        const salaryStr = parts[2].trim();
+                        if (salaryStr.includes('R$') && currentMonth) {
+                            const salary = parseFloat(salaryStr.replace(/["R$]/g, '').replace(/\./g, '').replace(',', '.'));
+                            if (!isNaN(salary) && salary > 0) {
+                                financialData.salary[currentMonth] = salary;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                if (line.includes('R$') && !line.includes('Sobrou') && !line.includes('Total') && !line.includes('Salário') && !line.includes('Planejamento') && !line.includes('Lucro') && currentMonth) {
+                    const parts = parseCSVLineRobust(line);
+                    
+                    if (parts.length >= 4) {
+                        const valueStr = parts[2].trim();
+                        const description = parts[3].trim();
+                        const paid = parts[4] && parts[4].trim() !== '';
+                        
+                        
+                        if (valueStr.includes('R$') && description && description !== '' && description !== 'Mês' && description !== 'Valor') {
+                            let cleanValue = valueStr.replace(/["R$]/g, '').trim();
+                            cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+                            const value = parseFloat(cleanValue);
+                            
+                            
+                            if (!isNaN(value) && value > 0) {
+                                financialData.expenses[currentMonth].push({
+                                    description: description,
+                                    value: value,
+                                    paid: paid
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            saveData();
+            updateDisplay();
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function downloadExampleCSV() {
+            // Conteúdo do arquivo Example.csv
+            const csvContent = `,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Janeiro,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Fevereiro,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Março,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Abril,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Maio,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Junho,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Julho,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Agosto,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Setembro,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Outubro,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Novembro,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,Planejamento mensal,,,,
+,,,,,
+,Mês,Salário,Valor,Despesa,Foi pago
+,Dezembro,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,Sobrou:,"R$ 0,00",Total de gastos:,,"R$ 0,00"
+,,,,,
+,,,,,
+,Lucro total do ano,"R$ 0,00",,,
+,Total de gastos do ano,"R$ 0,00",,,
+,Total guardado no ano,"R$ 0,00",,,`;
+
+            // Conteúdo do arquivo tutorial.txt
+            const tutorialContent = `1 - Abrir o arquivo Example.csv em um editor de planilhas - Nele temos todos os meses do ano. Só preencher os valores em cada mês e se sobrar linhas das despesas, pode deixar em branco, se faltar, pode manipular a tabela para acrescentar linhas, mas deixe as tabelas separadas por 1 linha para não quebrar os cálculos e verifique se os valores estão sendo calculados corretamente, senão terá que alterar as fórmulas das células que contém o valor de Sobrou e Total de gastos.
+
+2 - Preencher o faturamento do mês abaixo de Salário - Apenas números
+
+3 - Preencher o valor das despesas abaixo da coluna Valor - Apenas números
+
+4 - Preencher a descrição da despesa abaixo da coluna Despesa, campos em vermelho - Qualquer tipo de texto
+
+5 - O foi pago só funciona no site. Na planilha servia anteriormente quando o site não existia`;
+
+            // Criar arquivo ZIP com JSZip
+            const zip = new JSZip();
+            
+            // Adicionar arquivos ao ZIP
+            zip.file("Example.csv", csvContent);
+            zip.file("tutorial.txt", tutorialContent);
+            
+            // Gerar o arquivo ZIP
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                // Criar link de download
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = 'tutorial.zip';
+                link.click();
+                
+                showAlert('Pasta tutorial baixada com sucesso! 📁', 'success');
+            });
+        }
+
+    </script>
+</body>
+</html>
